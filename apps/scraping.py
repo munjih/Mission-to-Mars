@@ -2,6 +2,7 @@
 from splinter import Browser
 from bs4 import BeautifulSoup
 import pandas as pd
+import datetime as dt
 
 def scrape_all():
     # Initiate headless driver for deployment
@@ -74,7 +75,7 @@ def featured_image(browser):
     
     return img_url
 
-def mars_facts(broswer):
+def mars_facts():
     try:
         df = pd.read_html('http://space-facts.com/mars/')[0]
     except BaseException:
@@ -85,7 +86,7 @@ def mars_facts(broswer):
     
     return df.to_html()
 
-browser.quit()
+#browser.quit()
 
 if __name__ == "__main__":
     # If running as script, print scraped data
