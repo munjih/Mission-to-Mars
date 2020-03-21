@@ -11,13 +11,22 @@ def scrape_all():
     browser = Browser('chrome', **executable_path, headless=True)
 
     news_title, news_paragraph = mars_news(browser)
-
+    hemisphere_images = mars_hemisphere(browser)
+    
     # Run all scraping functions and store results in dictionary
     data = {
       "news_title": news_title,
       "news_paragraph": news_paragraph,
       "featured_image": featured_image(browser),
       "facts": mars_facts(),
+      "hemisphere_1_img": hemisphere_images[0].get('img_url'),
+      "hemisphere_1_title": hemisphere_images[0].get('title'),
+      "hemisphere_2_img": hemisphere_images[1].get('img_url'),
+      "hemisphere_2_title": hemisphere_images[1].get('title'),
+      "hemisphere_3_img": hemisphere_images[2].get('img_url'),
+      "hemisphere_3_title": hemisphere_images[2].get('title'),
+      "hemisphere_4_img": hemisphere_images[3].get('img_url'),
+      "hemisphere_4_title": hemisphere_images[3].get('title'),
       "last_modified": dt.datetime.now()
     }
 
@@ -81,12 +90,49 @@ def mars_facts():
     except BaseException:
         return None
     
-    df.columns=['description', 'value']
-    df.set_index('description', inplace=True)
+    df.columns=['Description', 'Mars']
+    df.set_index('Description', inplace=True)
     
     return df.to_html()
 
-#browser.quit()
+def mars_hemisphere(browser):
+    # Visit URL
+    url = 'https://astrogeology.usgs.gov/search/results?q=hemisphere+enhanced&k1=target&v1=Mars'
+    browser.visit(url)
+    
+    # Parse html
+    html = browser.html
+    soup  = BeautifulSoup (html, 'html.parser')
+
+    # Find all the hemispheres
+    hemispheres = soup.find_all('div', class_="description")
+
+    # Variable to hold data
+    hemisphere_img = []
+
+    # Loop throught the hemisphere data to gather title and image url 
+    for item in hemispheres:
+        img_title = item.find('h3').get_text()
+        # Find image and click 
+        elem = browser.find_link_by_partial_text(img_title)
+        elem.click()
+
+        # Parse resulting browser with BeautifulSoup
+        html = browser.html
+        soup = BeautifulSoup (html, 'html.parser')
+        
+        rel_url = soup.find('img', class_="wide-image").get('src')
+        img_url = f'https://astrogeology.usgs.gov/{rel_url}'
+
+        # Store as dictionary and append
+        hemisphere ={"img_url":img_url, "title":img_title}
+        hemisphere_img.append(hemisphere)
+        
+        # Back to initial url to get next data
+        browser.visit(url)
+
+    return hemisphere_img
+
 
 if __name__ == "__main__":
     # If running as script, print scraped data
